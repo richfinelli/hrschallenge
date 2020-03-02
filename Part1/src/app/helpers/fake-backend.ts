@@ -10,7 +10,6 @@ let users = JSON.parse(localStorage.getItem('users')) || [];
 export class FakeBackendInterceptor implements HttpInterceptor {
     intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
         const { url, method, headers, body } = request;
-
         // wrap in delayed observable to simulate server api call
         return of(null)
             .pipe(mergeMap(handleRoute))
@@ -28,6 +27,10 @@ export class FakeBackendInterceptor implements HttpInterceptor {
                     return getUsers();
                 case url.match(/\/users\/\d+$/) && method === 'DELETE':
                     return deleteUser();
+                //FINELLI: added the editUserName function to the switch statement 
+                //to call the new route function: editUserName()
+                case url.match(/\/users\/\d+$/) && method === 'POST':
+                    return editUserName();
                 default:
                     // pass through any requests not handled above
                     return next.handle(request);
@@ -51,13 +54,16 @@ export class FakeBackendInterceptor implements HttpInterceptor {
 
         function register() {
             const user = body
-
+            
+            //Prevents: if the username being registered is the same as the new username being created
             if (users.find(x => x.username === user.username)) {
                 return error('Username "' + user.username + '" is already taken')
             }
-
+            //new user.id is 1 more than total number of users
             user.id = users.length ? Math.max(...users.map(x => x.id)) + 1 : 1;
+            //add new user to the users array
             users.push(user);
+            //update localStorage
             localStorage.setItem('users', JSON.stringify(users));
 
             return ok();
@@ -75,16 +81,25 @@ export class FakeBackendInterceptor implements HttpInterceptor {
             localStorage.setItem('users', JSON.stringify(users));
             return ok();
         }
+
+        //FINELLI: 
+        //this function updates localStorage with the new first and/or last name
         function editUserName() {
             if (!isLoggedIn()) return unauthorized();
-            console.log("Editing user's name");
-            users = users.filter(x => x.id !== idFromUrl());
-            console.log(users);
-            //localStorage.setItem('users', JSON.stringify(users));
+            const user = body; //user from the POST 
+            //'users' is an object of all users in localStorage
+            //get the user from localStorage that matches the user from the POST
+            let thisUser = users.find(x => x.id === idFromUrl());
+            //update the users object with the new first and last name
+            thisUser.firstName = user.firstName;
+            thisUser.lastName = user.lastName;
+            thisUser.edit = false; //hides the edit name inputs now that the update is completed
+            //update localStorage with the new users object
+            localStorage.setItem('users', JSON.stringify(users));
             return ok();
         }
-        // helper functions
 
+        // helper functions
         function ok(body?) {
             return of(new HttpResponse({ status: 200, body }))
         }

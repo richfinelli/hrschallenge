@@ -1,10 +1,86 @@
-<h1>Hi {{currentUser.firstName}}!</h1>
+    <!-- 
+      FINELLI: 
+      A few updates to this component's markup:
+      1) added a few classes to style it to look slightly better. 
+      This was done to allow me to better visualize how the editing capability would work. 
+      2) added the editNameForm using <ng-template> and an [ngIf] statement to only show
+      the edit fields when a user clicks the edit links
+      This form was borrowed heavily from the form in the register component. 
+      3) Added a new anchor link "Edit name" that triggers the display
+      of the edit name form inputs
+    -->
+
+<h1 class="users__title">Hi {{currentUser.firstName}}!</h1>
 <p>You're logged in to your HRS App!!</p>
-<h3>All registered users:</h3>
-<ul>
-  <li *ngFor="let user of users">
-    {{user.username}} ({{user.firstName}} {{user.lastName}})
-    - <a href="#" (click)="deleteUser(user.id)" class="text-danger">Delete</a>
-    - <a href="#" (click)="editUserName(user.id)" class="text-danger">Edit ID</a>
+<h2 class="users__sub-title">All registered users:</h2>
+
+
+
+<ul class="users__container">
+  <li class="users__user" *ngFor="let user of users">
+    <h3>{{user.firstName}}<br>{{user.lastName}}</h3>
+    
+    <!-- 
+      FINELLI: 
+      1) this is the EDIT FORM
+      2) Note: I used [(ngModel)] on the input fields for two-way binding. 
+      The browser console warned me that this was deprecated
+      in future version of angular... I researched the correct way to do this
+      but could not easily implement. Since this was not core to the edit name
+      feature, I did not pursue further.  
+      3) Re-used styles and validation from Register and Login component
+    -->
+    <ng-template [ngIf]="user.edit">
+      <form [formGroup]="editNameForm" (ngSubmit)="updateUserName(user, user.id, $event)">
+        <div class="form-group">
+          <label for="firstName">First Name</label>
+          <input type="text" 
+            [(ngModel)]="user.firstName"
+            formControlName="firstName" 
+            class="form-control" 
+            [ngClass]="{ 'is-invalid': submitted && f.firstName.errors }" 
+            value="{{user.firstName}}"
+          />
+          <div *ngIf="submitted && f.firstName.errors" class="invalid-feedback">
+            <div *ngIf="f.firstName.errors.required">First Name is required</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="lastName">Last Name</label>
+          <input 
+            type="text" 
+            [(ngModel)]="user.lastName"
+            formControlName="lastName" 
+            class="form-control" 
+            [ngClass]="{ 'is-invalid': submitted && f.lastName.errors }" 
+            value="{{user.lastName}}"
+          />
+          <div *ngIf="submitted && f.lastName.errors" class="invalid-feedback">
+            <div *ngIf="f.lastName.errors.required">Last Name is required</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <button [disabled]="loading" class="btn btn-primary">
+            <span *ngIf="loading" class="spinner-border spinner-border-sm mr-1"></span>
+            Save
+          </button>
+          <a (click)="hideEditUserNameFields(user)" class="btn btn-link">Cancel</a>
+        </div>
+      </form>
+    </ng-template>
+
+
+    <p>Username: {{user.username}}</p>
+
+    <!-- 
+      FINELLI: 
+      1) Updated <a> tags to use an 'href' attribute in order to acheive accessibility and ADA compliance
+      2) added the 'Edit name' link that triggers showing the edit name form. Also, this link 
+      gets hidden using *ngIf after clicking it until the edit name form is either cancelled or saved.
+    -->
+    <div class="users__controls">
+      <a href="#" (click)="deleteUser(user.id)" class="text-danger">Delete</a>
+      <a href="#" *ngIf="!user.edit" (click)="showEditUserNameFields(user)" class="text-danger">Edit name</a>
+    </div>
   </li>
 </ul>
